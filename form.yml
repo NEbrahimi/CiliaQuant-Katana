@@ -25,7 +25,7 @@ attributes:
   #     modules: "python/3.5"
   # @example Using combination of modules
   #     modules: "python/3.5 cuda/8.0.44"
-  modules: "python/3.8.5 ipykernel/6.21.2"
+  modules: "python/3.10.8 ood-jupyterlab/4.1.6"
 
   # Any extra command line arguments to feed to the `jupyter notebook ...`
   # command that launches the Jupyter notebook within the batch job
@@ -43,8 +43,4 @@ attributes:
 form:
   - modules
   - extra_jupyter_args
-  - bc_account
-  - bc_queue
-  - bc_num_hours
-  - bc_num_slots
   - bc_email_on_started
