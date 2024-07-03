@@ -1,0 +1,8 @@
+streamlit
+opencv-python-headless
+nd2reader
+numpy
+matplotlib
+scipy
+pandas
+seaborn
