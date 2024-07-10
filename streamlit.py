@@ -131,7 +131,7 @@ def pixel_wise_fft_filtered_and_masked(video_path, fps, freq_min, freq_max, mag_
     colorbar.ax.tick_params(labelsize=7)  # Adjust the color bar tick size
 
     # Save the figure without extra space
-    magnitude_path = os.path.join(r"C:\Users\z3541106\codes\datasets\images\storage", 'magnitude_map.png')
+    magnitude_path = os.path.join(storage_path, 'magnitude_map.png')
     fig.savefig(magnitude_path, bbox_inches='tight', pad_inches=0, dpi=300)  # Save with high DPI for clarity
     plt.close(fig)
     print(f"Magnitude map saved to {magnitude_path}")
@@ -421,7 +421,7 @@ if uploaded_file and exposure_time > 0 and run_step_1:
 
 
 # Define the permanent storage path
-storage_path = r"C:\Users\z3541106\codes\datasets\images\storage"
+storage_path = r"/home/z3541106/ondemand/dev/CiliaQuant-Katana/storage"
 os.makedirs(storage_path, exist_ok=True)
 
 # Step 2 processing
@@ -444,9 +444,8 @@ if 'original_video_path' in st.session_state and run_step_2:
     apply_mask_to_video(st.session_state['original_video_path'], mask_path, masked_video_path)
     compatible_masked_video_path = convert_video_for_streamlit(masked_video_path)
 
-    original_video_permanent_path = os.path.join(r"C:\Users\z3541106\codes\datasets\images\storage",
-                                                 'original_video.mp4')
-    masked_video_permanent_path = os.path.join(r"C:\Users\z3541106\codes\datasets\images\storage", 'masked_video.mp4')
+    original_video_permanent_path = os.path.join(storage_path, 'original_video.mp4')
+    masked_video_permanent_path = os.path.join(storage_path, 'masked_video.mp4')
     shutil.copy(st.session_state['original_video_path'], original_video_permanent_path)
     shutil.copy(masked_video_path, masked_video_permanent_path)
 
@@ -486,8 +485,7 @@ if 'original_video_path' in st.session_state and run_step_2:
         ax.axis('off')
 
         # Save resized image without additional color bar
-        resized_magnitude_path = os.path.join(r"C:\Users\z3541106\codes\datasets\images\storage",
-                                              'resized_magnitude_map.png')
+        resized_magnitude_path = os.path.join(storage_path, 'resized_magnitude_map.png')
         fig.savefig(resized_magnitude_path, bbox_inches='tight', pad_inches=0, dpi=300)
         plt.close(fig)
 
