@@ -157,8 +157,20 @@ def apply_mask_to_video(video_path, mask_path, output_video_path):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out_video = cv2.VideoWriter(output_video_path, fourcc, 333, (width, height))
 
+    # Define the color for masked areas (green with transparency)
+    green = np.array([0, 255, 0], dtype=np.uint8)  # Green color
+    alpha = 0.3  # Transparency factor
+
     while ret:
-        masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
+        # Convert mask to boolean where true indicates the pixels to keep original
+        mask_bool = mask.astype(bool)
+        # Create an overlay with the green color on the areas to be masked
+        overlay = np.zeros_like(frame, dtype=np.uint8)
+        overlay[~mask_bool] = green  # Apply green where mask is black
+
+        # Blend the overlay with the original frame based on the alpha value
+        masked_frame = cv2.addWeighted(frame, 1, overlay, alpha, 0)
+
         out_video.write(masked_frame)
         ret, frame = cap.read()
 
@@ -788,29 +800,3 @@ if 'fft_results' in st.session_state and run_step_4:
                 """,
                 unsafe_allow_html=True
             )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
