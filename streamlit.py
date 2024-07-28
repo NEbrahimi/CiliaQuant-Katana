@@ -367,8 +367,8 @@ with st.sidebar:
     run_step_2 = st.button("Run Step 2")
 
     st.title("Step 3: Cilia Beat Frequency Analysis")
-    video_source = st.radio("Select Video Source", options=['Original', 'Masked'], index=0,
-                            help="Choose whether to use the original or masked video for analysis.")
+    # video_source = st.radio("Select Video Source", options=['Original', 'Masked'], index=0,
+    #                         help="Choose whether to use the original or masked video for analysis.")
     freq_filter_min = st.number_input("Frequency Filter Min", value=2, help="Minimum frequency for CBF analysis.")
     freq_filter_max = st.number_input("Frequency Filter Max", value=30, help="Maximum frequency for CBF analysis.")
     run_step_3 = st.button("Run Step 3")
