@@ -379,14 +379,14 @@ with st.sidebar:
                                 help="Set the size of the grid.")
     run_step_4 = st.button("Run Step 4")
 
-    # Sidebar Input for Step 5
-    st.title("Step 5: Cilia Beat Coordination Analysis")
-    coordination_video_source = st.radio("Select Video Source", options=['Original', 'Masked'], index=0,
-                                         help="Choose whether to use the original or masked video for analysis for coordination.")
-    grid_size = st.number_input("Grid Size for Coordination Analysis", min_value=1, max_value=20, value=10, step=1)
-    n_clusters = st.number_input("Number of Clusters for Coordination Analysis", min_value=1, max_value=10, value=5,
-                                 step=1)
-    run_step_5 = st.button("Run Step 5")
+    # # Sidebar Input for Step 5
+    # st.title("Step 5: Cilia Beat Coordination Analysis")
+    # coordination_video_source = st.radio("Select Video Source", options=['Original', 'Masked'], index=0,
+    #                                      help="Choose whether to use the original or masked video for analysis for coordination.")
+    # grid_size = st.number_input("Grid Size for Coordination Analysis", min_value=1, max_value=20, value=10, step=1)
+    # n_clusters = st.number_input("Number of Clusters for Coordination Analysis", min_value=1, max_value=10, value=5,
+    #                              step=1)
+    # run_step_5 = st.button("Run Step 5")
 
 
 # Define tooltips for each metric
