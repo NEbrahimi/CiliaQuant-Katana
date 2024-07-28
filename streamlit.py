@@ -560,16 +560,23 @@ if 'original_video_permanent_path' in st.session_state and run_step_3:
             st.pyplot(fig)
 
         with col3:
+            # data = {
+            #     'Measurement': [
+            #         'Name', 'CFB (power) (Hz)', 'CBF (amplitude) (Hz)', 'Mean Frequency (Hz)',
+            #         'Median Frequency (Hz)', 'Standard Deviation', '25th Percentile', '75th Percentile',
+            #         'Coverage %*'
+            #     ],
+
             data = {
                 'Measurement': [
-                    'Name', 'CFB (power) (Hz)', 'CBF (amplitude) (Hz)', 'Mean Frequency (Hz)',
+                    'Name', 'CFB (power) (Hz)', 'Mean Frequency (Hz)',
                     'Median Frequency (Hz)', 'Standard Deviation', '25th Percentile', '75th Percentile',
                     'Coverage %*'
                 ],
                 'Value': [
                     uploaded_file.name,
                     f"{max_power_freq:.2f}",
-                    f"{max_amplitude_freq:.2f}",
+                    # f"{max_amplitude_freq:.2f}",
                     f"{stats['Mean']:.2f}",
                     f"{stats['Median']:.2f}",
                     f"{stats['std']:.2f}",
