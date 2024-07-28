@@ -504,7 +504,7 @@ if 'original_video_permanent_path' in st.session_state and run_step_3:
     fps = 1 / exposure_time  # Calculate frames per second based on exposure time
     video_path = st.session_state['original_video_permanent_path']  # Default to original video
 
-    if video_source == 'Masked' and 'mask_path' in st.session_state and os.path.exists(st.session_state['mask_path']):
+    if 'mask_path' in st.session_state and os.path.exists(st.session_state['mask_path']):
         video_path = st.session_state['masked_video_permanent_path']
         mask_path = st.session_state['mask_path']
         mask_img = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
@@ -514,7 +514,8 @@ if 'original_video_permanent_path' in st.session_state and run_step_3:
             st.error("Failed to read the mask image. Check the file at the specified path.")
             coverage_percent = "N/A"  # In case mask image is not readable
     else:
-        coverage_percent = "100" if video_source == 'Original' else "N/A"
+        st.error("Mask path not found. Please complete the necessary steps to generate the mask.")
+        coverage_percent = "N/A"
 
     # Save the selected video path for use in step 4
     st.session_state['selected_video_path'] = video_path
