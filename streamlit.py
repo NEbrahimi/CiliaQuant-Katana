@@ -433,7 +433,7 @@ if uploaded_file and exposure_time > 0 and run_step_1:
 
 
 # Define the permanent storage path
-storage_path = r"/home/z3541106/ondemand/dev/CiliaQuant-Katana/storage"
+storage_path = "/srv/scratch/micf_waters/CiliaQuant/storage"
 os.makedirs(storage_path, exist_ok=True)
 
 # Step 2 processing
