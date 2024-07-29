@@ -623,6 +623,23 @@ if 'original_video_permanent_path' in st.session_state and run_step_3:
                 unsafe_allow_html=True
             )
             st.table(df)
+
+            # Save the DataFrame to a CSV file
+            statistics_path = os.path.join(storage_path, 'analysis_statistics.csv')
+            df.to_csv(statistics_path, index=False)
+
+            # Saving plots
+            frequency_map_path = os.path.join(storage_path, 'frequency_map.png')
+            fig.savefig(frequency_map_path)
+            plt.close(fig)  # Close the figure after saving to free up memory
+
+            # Save other plot if needed
+            boxplot_path = os.path.join(storage_path, 'boxplot.png')
+            fig2, ax2 = plt.subplots()  # Assuming you have a second plot to save
+            sns.boxplot(y=valid_cbfs, ax=ax2)
+            fig2.savefig(boxplot_path)
+            plt.close(fig2)  # Close this figure too
+
             st.markdown('*Coverage % is calculated based on the masked video, and is 100% for the original video.')
     else:
         st.error(
@@ -638,9 +655,7 @@ if 'fft_results' in st.session_state and run_step_4:
     video_path = st.session_state['selected_video_path']
 
     if video_path is None:
-        st.error(
-            "The selected video source is not available. Please complete the necessary steps for generating the video."
-        )
+        st.error("The selected video source is not available. Please complete the necessary steps for generating the video.")
     else:
         cbf_grid = compute_grid_cbf(fft_results, fps, grid_size, freq_filter_min, freq_filter_max)
 
@@ -650,8 +665,8 @@ if 'fft_results' in st.session_state and run_step_4:
         mean_cbf = np.mean(non_zero_cbfs)
         cv_cbf = std_dev_cbf / mean_cbf if mean_cbf != 0 else 0  # Coefficient of Variation
 
-        # Create the grid map
-        grid_map_path = os.path.join(tempfile.gettempdir(), 'grid_map.png')
+        # Create the grid map and save it
+        grid_map_path = os.path.join(storage_path, 'grid_cbf_map.png')
         plt.figure(figsize=(10, 8))
         plt.imshow(cbf_grid, cmap='jet', interpolation='nearest', vmin=0, vmax=50)
         plt.colorbar(label='Dominant Frequency (Hz)')
@@ -662,8 +677,7 @@ if 'fft_results' in st.session_state and run_step_4:
         capture = cv2.VideoCapture(video_path)
         fourcc = cv2.VideoWriter_fourcc(*'M', 'J', 'P', 'G')
         grid_video_path = os.path.join(tempfile.gettempdir(), 'grid_video.avi')
-        out = cv2.VideoWriter(grid_video_path, fourcc, fps,
-                              (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+        out = cv2.VideoWriter(grid_video_path, fourcc, fps, (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
         font_scale = max(0.3, min(1.0, 1.5 / grid_size))  # Adjusted font scale logic
 
@@ -680,14 +694,12 @@ if 'fft_results' in st.session_state and run_step_4:
                     x2 = (j + 1) * frame.shape[1] // grid_size
 
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 1)
-                    cv2.putText(frame, f'{cbf_grid[i, j]:.2f}', (x1 + 5, y1 + 20), cv2.FONT_HERSHEY_SIMPLEX, font_scale,
-                                (0, 255, 0), 1)
+                    cv2.putText(frame, f'{cbf_grid[i, j]:.2f}', (x1 + 5, y1 + 20), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 0), 1)
 
             out.write(frame)
 
         capture.release()
         out.release()
-
 
         # Convert video to MP4 format for compatibility
         def convert_video_to_mp4(input_path):
