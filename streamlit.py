@@ -528,28 +528,35 @@ if 'original_video_path' in st.session_state and run_step_2:
         #     st.download_button("Download Magnitude Map", file.read(), file_name='Magnitude_Map.png',
         #                        key="download_magnitude_map")
 
-# Step 3 processing with updated visualizations and structured table layout
+# Step 3: Cilia Beat Frequency Analysis
 if 'original_video_permanent_path' in st.session_state and run_step_3:
-    mpl.rcParams['agg.path.chunksize'] = 10000  # You can adjust this value as needed
+    mpl.rcParams['agg.path.chunksize'] = 10000  # Adjust this value as needed
 
     fps = 1 / exposure_time  # Calculate frames per second based on exposure time
     video_path = st.session_state['original_video_permanent_path']  # Default to original video
 
+    # Check if the mask path is available and valid
     if 'mask_path' in st.session_state and os.path.exists(st.session_state['mask_path']):
-        video_path = st.session_state['masked_video_permanent_path']
-        mask_path = st.session_state['mask_path']
-        mask_img = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-        coverage_percent = np.count_nonzero(mask_img) / mask_img.size * 100 if mask_img is not None else "N/A"
+        mask_img = cv2.imread(st.session_state['mask_path'], cv2.IMREAD_GRAYSCALE)
+        if mask_img is not None:
+            video_path = st.session_state.get('masked_video_permanent_path', video_path)
+            coverage_percent = np.count_nonzero(mask_img) / mask_img.size * 100
+        else:
+            coverage_percent = "N/A"
+            st.error("Failed to read the mask image. Check the file at the specified path.")
     else:
-        st.error("Mask path not found. Please complete the necessary steps to generate the mask.")
         coverage_percent = "N/A"
+        st.error("Mask path not found. Please complete the necessary steps to generate the mask.")
+
+    # Save the selected video path for use in Step 4
+    st.session_state['selected_video_path'] = video_path  # Ensure this key is always set
 
     if coverage_percent != "N/A":
+        # Perform FFT analysis if coverage is valid
         freq_amp_df, max_amplitude_freq, max_power_freq, interpolated_freqs, interpolated_power_distribution, fft_results = pixel_wise_fft(
-            video_path, mask_path, fps, freq_filter_min, freq_filter_max
+            video_path, st.session_state['mask_path'], fps, freq_filter_min, freq_filter_max
         )
-        st.session_state['fft_results'] = fft_results  # Save FFT results to session state for use in step 4
-
+        st.session_state['fft_results'] = fft_results  # Save FFT results for use in Step 4
         valid_cbfs = freq_amp_df[freq_amp_df['Frequency'] > 0]['Frequency']
         stats = calculate_statistics(valid_cbfs)
 
@@ -597,9 +604,9 @@ if 'original_video_permanent_path' in st.session_state and run_step_3:
             # Save the measurement statistics table
             statistics_path = os.path.join(storage_path, 'measurement_statistics.csv')
             df.to_csv(statistics_path, index=False)  # Only one CSV save operation for statistics
-
     else:
         st.error("Mask path not found or the original video is selected without a need for masking. Please complete the necessary steps to generate the mask.")
+
 
 def convert_video_to_mp4(input_path):
     output_path = input_path.replace('.avi', '_converted.mp4')
@@ -672,6 +679,7 @@ if 'fft_results' in st.session_state and run_step_4:
         # Convert video to MP4 format for compatibility and save
         converted_grid_video_path = convert_video_to_mp4(grid_video_path)
         shutil.copy(converted_grid_video_path, os.path.join(storage_path, 'grid_video.mp4'))
+
 
 
 
