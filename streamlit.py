@@ -13,6 +13,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.interpolate import UnivariateSpline
 import seaborn as sns
 import matplotlib as mpl
+import io
 
 
 # Clear session state at the beginning of the script
@@ -512,18 +513,24 @@ if 'original_video_path' in st.session_state and run_step_2:
         im = ax.imshow(magnitude_image)
         ax.axis('off')
 
-        # # Save resized image without additional color bar
+        # Save resized image without additional color bar
         # resized_magnitude_path = os.path.join(storage_path, 'resized_magnitude_map.png')
         # fig.savefig(resized_magnitude_path, bbox_inches='tight', pad_inches=0, dpi=300)
-        # plt.close(fig)
-        #
-        # # Load the resized image back to add padding
+        plt.close(fig)
+
+        # Display the resized magnitude image directly from the buffer without saving
+        buffer = io.BytesIO()
+        fig.savefig(buffer, format='png', bbox_inches='tight', pad_inches=0, dpi=300)
+        st.image(buffer.getvalue(), use_column_width=True)
+        buffer.close()
+
+        # Load the resized image back to add padding
         # resized_image = plt.imread(resized_magnitude_path)
         #
         # st.image(resized_magnitude_path, use_column_width=True)
-        # # with open(resized_magnitude_path, "rb") as file:
-        # #     st.download_button("Download Magnitude Map", file.read(), file_name='Magnitude_Map.png',
-        # #                        key="download_magnitude_map")
+        # with open(resized_magnitude_path, "rb") as file:
+        #     st.download_button("Download Magnitude Map", file.read(), file_name='Magnitude_Map.png',
+        #                        key="download_magnitude_map")
 
 # Step 3 processing with updated visualizations and structured table layout
 if 'original_video_permanent_path' in st.session_state and run_step_3:
