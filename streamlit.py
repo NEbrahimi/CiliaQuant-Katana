@@ -539,112 +539,75 @@ if 'original_video_permanent_path' in st.session_state and run_step_3:
         video_path = st.session_state['masked_video_permanent_path']
         mask_path = st.session_state['mask_path']
         mask_img = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-        if mask_img is not None:
-            coverage_percent = np.count_nonzero(mask_img) / mask_img.size * 100
-        else:
-            st.error("Failed to read the mask image. Check the file at the specified path.")
-            coverage_percent = "N/A"  # In case mask image is not readable
+        coverage_percent = np.count_nonzero(mask_img) / mask_img.size * 100 if mask_img is not None else "N/A"
     else:
         st.error("Mask path not found. Please complete the necessary steps to generate the mask.")
         coverage_percent = "N/A"
 
-    # Save the selected video path for use in step 4
-    st.session_state['selected_video_path'] = video_path
-
-    # Proceed with analysis only if coverage_percent is not "N/A"
     if coverage_percent != "N/A":
-        # Analyze video with the specified frequency parameters
         freq_amp_df, max_amplitude_freq, max_power_freq, interpolated_freqs, interpolated_power_distribution, fft_results = pixel_wise_fft(
             video_path, mask_path, fps, freq_filter_min, freq_filter_max
         )
-
-        # Save FFT results to session state for use in step 4
-        st.session_state['fft_results'] = fft_results
+        st.session_state['fft_results'] = fft_results  # Save FFT results to session state for use in step 4
 
         valid_cbfs = freq_amp_df[freq_amp_df['Frequency'] > 0]['Frequency']
         stats = calculate_statistics(valid_cbfs)
 
         col1, col2, col3 = st.columns([3, 1, 4])
         with col1:
-            scaled_power_distribution = [val / 1e9 for val in interpolated_power_distribution]
-            st.markdown(
-                "<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 55px '>Power Spectral Density</h5>",
-                unsafe_allow_html=True
-            )
             fig, ax = plt.subplots(figsize=(8, 6), dpi=600)
-            ax.plot(interpolated_freqs, scaled_power_distribution)
+            ax.plot(interpolated_freqs, [val / 1e9 for val in interpolated_power_distribution])
             ax.set_xlabel('Frequency (Hz)')
             ax.set_ylabel('Power (x10^9)')
             ax.set_xlim(0, 100)
             ax.set_ylim(bottom=0)
-            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{x:.1f}'))
             ax.grid(False)
             st.pyplot(fig)
 
+            # Save the frequency map
+            frequency_map_path = os.path.join(storage_path, 'frequency_map.png')
+            fig.savefig(frequency_map_path)
+            plt.close(fig)  # Close the plot to free resources
+
         with col2:
-            st.markdown(
-                "<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 50px '> Box Plot</h5>",
-                unsafe_allow_html=True
-            )
             fig, ax = plt.subplots(figsize=(2, 6), dpi=400)
-            ax.set_ylabel('Frequency (Hz)')
-            sns.boxplot(y=valid_cbfs)
+            sns.boxplot(y=valid_cbfs, ax=ax)
             st.pyplot(fig)
 
-        with col3:
-            # data = {
-            #     'Measurement': [
-            #         'Name', 'CFB (power) (Hz)', 'CBF (amplitude) (Hz)', 'Mean Frequency (Hz)',
-            #         'Median Frequency (Hz)', 'Standard Deviation', '25th Percentile', '75th Percentile',
-            #         'Coverage %*'
-            #     ],
+            # Save the boxplot
+            boxplot_path = os.path.join(storage_path, 'boxplot.png')
+            fig.savefig(boxplot_path)
+            plt.close(fig)  # Close the plot to free resources
 
+        with col3:
             data = {
                 'Measurement': [
-                    'Name', 'CFB (power) (Hz)', 'Mean Frequency (Hz)',
-                    'Median Frequency (Hz)', 'Standard Deviation', '25th Percentile', '75th Percentile',
-                    'Coverage %*'
+                    'Name', 'CFB (power) (Hz)', 'Mean Frequency (Hz)', 'Median Frequency (Hz)',
+                    'Standard Deviation', '25th Percentile', '75th Percentile', 'Coverage %*'
                 ],
                 'Value': [
-                    uploaded_file.name,
-                    f"{max_power_freq:.2f}",
-                    # f"{max_amplitude_freq:.2f}",
-                    f"{stats['Mean']:.2f}",
-                    f"{stats['Median']:.2f}",
-                    f"{stats['std']:.2f}",
-                    f"{stats['25%']:.2f}",
-                    f"{stats['75%']:.2f}",
-                    f"{coverage_percent:.2f}" if coverage_percent != "100" else coverage_percent
+                    uploaded_file.name, f"{max_power_freq:.2f}", f"{stats['Mean']:.2f}",
+                    f"{stats['Median']:.2f}", f"{stats['std']:.2f}", f"{stats['25%']:.2f}",
+                    f"{stats['75%']:.2f}", f"{coverage_percent:.2f}" if coverage_percent != "100" else coverage_percent
                 ]
             }
             df = pd.DataFrame(data)
-            st.markdown(
-                "<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 0px '>Measurement Results</h5>",
-                unsafe_allow_html=True
-            )
             st.table(df)
 
-            # Save the DataFrame to a CSV file
-            statistics_path = os.path.join(storage_path, 'analysis_statistics.csv')
-            df.to_csv(statistics_path, index=False)
+            # Save the measurement statistics table
+            statistics_path = os.path.join(storage_path, 'measurement_statistics.csv')
+            df.to_csv(statistics_path, index=False)  # Only one CSV save operation for statistics
 
-            # Saving plots
-            frequency_map_path = os.path.join(storage_path, 'frequency_map.png')
-            fig.savefig(frequency_map_path)
-            plt.close(fig)  # Close the figure after saving to free up memory
-
-            # Save other plot if needed
-            boxplot_path = os.path.join(storage_path, 'boxplot.png')
-            fig2, ax2 = plt.subplots()  # Assuming you have a second plot to save
-            sns.boxplot(y=valid_cbfs, ax=ax2)
-            fig2.savefig(boxplot_path)
-            plt.close(fig2)  # Close this figure too
-
-            st.markdown('*Coverage % is calculated based on the masked video, and is 100% for the original video.')
     else:
-        st.error(
-            "Mask path not found or the original video is selected without a need for masking. Please complete the necessary steps to generate the mask if using a masked video."
-        )
+        st.error("Mask path not found or the original video is selected without a need for masking. Please complete the necessary steps to generate the mask.")
+
+def convert_video_to_mp4(input_path):
+    output_path = input_path.replace('.avi', '_converted.mp4')
+    subprocess.run(
+        ['ffmpeg', '-y', '-i', input_path, '-vcodec', 'libx264', '-crf', '23', '-preset', 'fast', output_path],
+        check=True
+    )
+    return output_path
 
 # Step 4 processing
 if 'fft_results' in st.session_state and run_step_4:
@@ -663,7 +626,7 @@ if 'fft_results' in st.session_state and run_step_4:
         non_zero_cbfs = cbf_grid[cbf_grid > 0]
         std_dev_cbf = np.std(non_zero_cbfs)
         mean_cbf = np.mean(non_zero_cbfs)
-        cv_cbf = std_dev_cbf / mean_cbf if mean_cbf != 0 else 0  # Coefficient of Variation
+        cv_cbf = std_dev_cbf / mean_cbf if mean_cbf != 0 else 0
 
         # Create the grid map and save it
         grid_map_path = os.path.join(storage_path, 'grid_cbf_map.png')
@@ -677,9 +640,14 @@ if 'fft_results' in st.session_state and run_step_4:
         capture = cv2.VideoCapture(video_path)
         fourcc = cv2.VideoWriter_fourcc(*'M', 'J', 'P', 'G')
         grid_video_path = os.path.join(tempfile.gettempdir(), 'grid_video.avi')
-        out = cv2.VideoWriter(grid_video_path, fourcc, fps, (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        out = cv2.VideoWriter(
+            grid_video_path,
+            fourcc,
+            fps,
+            (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        )
 
-        font_scale = max(0.3, min(1.0, 1.5 / grid_size))  # Adjusted font scale logic
+        font_scale = max(0.3, min(1.0, 1.5 / grid_size))  # Adjusted font scale logic based on grid size
 
         while capture.isOpened():
             ret, frame = capture.read()
@@ -701,17 +669,11 @@ if 'fft_results' in st.session_state and run_step_4:
         capture.release()
         out.release()
 
-        # Convert video to MP4 format for compatibility
-        def convert_video_to_mp4(input_path):
-            output_path = input_path.replace('.avi', '_converted.mp4')
-            subprocess.run(
-                ['ffmpeg', '-y', '-i', input_path, '-vcodec', 'libx264', '-crf', '23', '-preset', 'fast', output_path],
-                check=True
-            )
-            return output_path
-
-
+        # Convert video to MP4 format for compatibility and save
         converted_grid_video_path = convert_video_to_mp4(grid_video_path)
+        shutil.copy(converted_grid_video_path, os.path.join(storage_path, 'grid_video.mp4'))
+
+
 
         col1, col2, col3, col4, col5 = st.columns(
             [2.5, 0.2, 3.0, 0.01, 2]
