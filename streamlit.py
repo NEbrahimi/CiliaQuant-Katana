@@ -512,18 +512,18 @@ if 'original_video_path' in st.session_state and run_step_2:
         im = ax.imshow(magnitude_image)
         ax.axis('off')
 
-        # Save resized image without additional color bar
-        resized_magnitude_path = os.path.join(storage_path, 'resized_magnitude_map.png')
-        fig.savefig(resized_magnitude_path, bbox_inches='tight', pad_inches=0, dpi=300)
-        plt.close(fig)
-
-        # Load the resized image back to add padding
-        resized_image = plt.imread(resized_magnitude_path)
-
-        st.image(resized_magnitude_path, use_column_width=True)
-        # with open(resized_magnitude_path, "rb") as file:
-        #     st.download_button("Download Magnitude Map", file.read(), file_name='Magnitude_Map.png',
-        #                        key="download_magnitude_map")
+        # # Save resized image without additional color bar
+        # resized_magnitude_path = os.path.join(storage_path, 'resized_magnitude_map.png')
+        # fig.savefig(resized_magnitude_path, bbox_inches='tight', pad_inches=0, dpi=300)
+        # plt.close(fig)
+        #
+        # # Load the resized image back to add padding
+        # resized_image = plt.imread(resized_magnitude_path)
+        #
+        # st.image(resized_magnitude_path, use_column_width=True)
+        # # with open(resized_magnitude_path, "rb") as file:
+        # #     st.download_button("Download Magnitude Map", file.read(), file_name='Magnitude_Map.png',
+        # #                        key="download_magnitude_map")
 
 # Step 3 processing with updated visualizations and structured table layout
 if 'original_video_permanent_path' in st.session_state and run_step_3:
