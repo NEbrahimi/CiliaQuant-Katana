@@ -642,7 +642,12 @@ if 'fft_results' in st.session_state and run_step_4:
         capture = cv2.VideoCapture(video_path)
         fourcc = cv2.VideoWriter_fourcc(*'M', 'J', 'P', 'G')
         grid_video_path = os.path.join(tempfile.gettempdir(), 'grid_video.avi')
-        out = cv2.VideoWriter(grid_video_path, fourcc, fps, (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        out = cv2.VideoWriter(
+            grid_video_path,
+            fourcc,
+            fps,
+            (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        )
 
         font_scale = max(0.3, min(1.0, 1.5 / grid_size))  # Adjusted font scale based on grid size
 
