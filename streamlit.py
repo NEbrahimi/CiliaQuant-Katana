@@ -414,13 +414,8 @@ if uploaded_file:
     storage_path = os.path.join("/srv/scratch/micf_waters/CiliaQuant/storage", file_name)
     os.makedirs(storage_path, exist_ok=True)
 
-# Step 1 processing
+# # Step 1 processing
 # if uploaded_file and exposure_time > 0 and run_step_1:
-#     keys_to_clear = ['mask_path', 'fft_results', 'selected_video_path', 'original_video_permanent_path', 'masked_video_permanent_path', 'compatible_masked_video_path']
-#     for key in keys_to_clear:
-#         if key in st.session_state:
-#             del st.session_state[key]
-#
 #     fps = 1 / exposure_time
 #     if 'temp_dir' not in st.session_state:
 #         st.session_state['temp_dir'] = tempfile.mkdtemp()
@@ -429,13 +424,11 @@ if uploaded_file:
 #     compatible_video_path = convert_video_for_streamlit(video_path)
 #     st.session_state['original_video_path'] = video_path
 #     st.session_state['compatible_video_path'] = compatible_video_path
-#     with open(compatible_video_path, "rb") as file:
-#         file_data = file.read()
-#     st.download_button("Download Original Video", file_data, compatible_video_path.split(os.path.sep)[-1])
 #     col1, col2 = st.columns(2)
 #     with col1:
 #         st.video(compatible_video_path, format='video/mp4', start_time=0, loop=True)
 
+# Step 1 processing
 if uploaded_file and exposure_time > 0 and run_step_1:
     fps = 1 / exposure_time
     if 'temp_dir' not in st.session_state:
@@ -443,15 +436,18 @@ if uploaded_file and exposure_time > 0 and run_step_1:
 
     video_path = convert_nd2_to_video(uploaded_file, st.session_state['temp_dir'], fps)
     compatible_video_path = convert_video_for_streamlit(video_path)
+
+    # Save the original video to the permanent storage path
+    original_video_permanent_path = os.path.join(storage_path, 'original_video.mp4')
+    shutil.copy(video_path, original_video_permanent_path)
+    st.session_state['original_video_permanent_path'] = original_video_permanent_path
+
     st.session_state['original_video_path'] = video_path
     st.session_state['compatible_video_path'] = compatible_video_path
     col1, col2 = st.columns(2)
     with col1:
         st.video(compatible_video_path, format='video/mp4', start_time=0, loop=True)
 
-# # Define the permanent storage path
-# storage_path = "/srv/scratch/micf_waters/CiliaQuant/storage"
-# os.makedirs(storage_path, exist_ok=True)
 
 # Step 2 processing
 if 'original_video_path' in st.session_state and run_step_2:
@@ -475,7 +471,7 @@ if 'original_video_path' in st.session_state and run_step_2:
 
     original_video_permanent_path = os.path.join(storage_path, 'original_video.mp4')
     masked_video_permanent_path = os.path.join(storage_path, 'masked_video.mp4')
-    shutil.copy(st.session_state['original_video_path'], original_video_permanent_path)
+    # shutil.copy(st.session_state['original_video_path'], original_video_permanent_path)
     shutil.copy(masked_video_path, masked_video_permanent_path)
 
     st.session_state['original_video_permanent_path'] = original_video_permanent_path
