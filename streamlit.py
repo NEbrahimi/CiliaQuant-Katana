@@ -616,26 +616,21 @@ def convert_video_to_mp4(input_path):
     )
     return output_path
 
-# Step 4 processing
+# Step 4 processing: Grid Analysis and Variation Metrics
 if 'fft_results' in st.session_state and run_step_4:
     fps = 1 / exposure_time
     fft_results = st.session_state['fft_results']
-
-    # Use the selected video source from Step 3
     video_path = st.session_state['selected_video_path']
 
     if video_path is None:
         st.error("The selected video source is not available. Please complete the necessary steps for generating the video.")
     else:
         cbf_grid = compute_grid_cbf(fft_results, fps, grid_size, freq_filter_min, freq_filter_max)
-
-        # Calculate the variation metrics
         non_zero_cbfs = cbf_grid[cbf_grid > 0]
         std_dev_cbf = np.std(non_zero_cbfs)
         mean_cbf = np.mean(non_zero_cbfs)
         cv_cbf = std_dev_cbf / mean_cbf if mean_cbf != 0 else 0
 
-        # Create the grid map and save it
         grid_map_path = os.path.join(storage_path, 'grid_cbf_map.png')
         plt.figure(figsize=(10, 8))
         plt.imshow(cbf_grid, cmap='jet', interpolation='nearest', vmin=0, vmax=50)
@@ -643,18 +638,13 @@ if 'fft_results' in st.session_state and run_step_4:
         plt.savefig(grid_map_path, bbox_inches='tight', pad_inches=0)
         plt.close()
 
-        # Overlay grid lines and CBF values on video frames
+        # Video processing with overlay of grid and CBF values
         capture = cv2.VideoCapture(video_path)
         fourcc = cv2.VideoWriter_fourcc(*'M', 'J', 'P', 'G')
         grid_video_path = os.path.join(tempfile.gettempdir(), 'grid_video.avi')
-        out = cv2.VideoWriter(
-            grid_video_path,
-            fourcc,
-            fps,
-            (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-        )
+        out = cv2.VideoWriter(grid_video_path, fourcc, fps, (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
-        font_scale = max(0.3, min(1.0, 1.5 / grid_size))  # Adjusted font scale logic based on grid size
+        font_scale = max(0.3, min(1.0, 1.5 / grid_size))  # Adjusted font scale based on grid size
 
         while capture.isOpened():
             ret, frame = capture.read()
@@ -676,128 +666,214 @@ if 'fft_results' in st.session_state and run_step_4:
         capture.release()
         out.release()
 
-        # Convert video to MP4 format for compatibility and save
         converted_grid_video_path = convert_video_to_mp4(grid_video_path)
         shutil.copy(converted_grid_video_path, os.path.join(storage_path, 'grid_video.mp4'))
 
-
-
-
-        col1, col2, col3, col4, col5 = st.columns(
-            [2.5, 0.2, 3.0, 0.01, 2]
-        )  # Added two columns 2 AND 4 to create spacing
+        # Column setup for displaying video, CBF heatmap, and variation metrics
+        col1, col2, col3, col4, col5 = st.columns([2.5, 0.2, 3.0, 0.01, 2])  # Maintain original column setup
 
         with col1:
-            st.markdown(
-                f"<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 0px;'>Grid Video</h5>",
-                unsafe_allow_html=True
-            )
+            st.markdown(f"<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 0px;'>Grid Video</h5>", unsafe_allow_html=True)
             st.video(converted_grid_video_path, format='video/mp4')
-            # with open(converted_grid_video_path, "rb") as file:
-            #     st.download_button("Download Grid Video", file.read(), file_name='grid_video.mp4',
-            #                        key="download_grid_video")
 
         with col3:
-            st.markdown(
-                f"<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 0px;'>CBF Heatmap</h5>",
-                unsafe_allow_html=True
-            )
+            st.markdown(f"<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 0px;'>CBF Heatmap</h5>", unsafe_allow_html=True)
             st.image(grid_map_path, use_column_width=True)
-            # with open(grid_map_path, "rb") as file:
-            #     st.download_button("Download Grid CBF Map", file.read(), file_name='grid_cbf_map.png',
-            #                        key="download_grid_cbf_map")
 
         with col5:
-            st.markdown(
-                f"<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 0px;'>Variation Metrics</h5>",
-                unsafe_allow_html=True
-            )
-            variation_data = {
-                'Metric': [
-                    'Mean CBF <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">The average Ciliary Beat Frequency across all grid cells.</span></span>',
-                    'Standard Deviation of CBF <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">The standard deviation of Ciliary Beat Frequency across grid cells, measured in Hertz (Hz), representing variability from the mean.</span></span>',
-                    'Coefficient of Variation <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">The ratio of the standard deviation to the mean, indicating relative variability (0 means no variability, close to 0 means low variability, >1 means high variability).</span></span>'
-                ],
-                'Value': [f"{mean_cbf:.2f}", f"{std_dev_cbf:.2f}", f"{cv_cbf:.2f}"]
-            }
+            # Save and display variation metrics
+            variation_data = {'Metric': ['Mean CBF (Hz)', 'Standard Deviation of CBF (Hz)', 'Coefficient of Variation'], 'Value': [f"{mean_cbf:.2f}", f"{std_dev_cbf:.2f}", f"{cv_cbf:.2f}"]}
             variation_df = pd.DataFrame(variation_data)
+            st.markdown(f"<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 0px;'>Variation Metrics</h5>", unsafe_allow_html=True)
+            st.table(variation_df)
+            # Save the variation metrics to CSV
+            variation_metrics_path = os.path.join(storage_path, 'variation_metrics.csv')
+            variation_df.to_csv(variation_metrics_path, index=False)
+            st.download_button("Download Variation Metrics", variation_metrics_path)
 
-            # Adding custom CSS for tooltips similar to sidebar
-            st.markdown(
-                """
-                <style>
-                .tooltip {
-                    position: relative;
-                    display: inline-block;
-                    cursor: pointer;
-                    font-size: 14px;
-                    color: #6c757d;
-                    margin-left: 5px;
-                }
-                .tooltip .tooltiptext {
-                    visibility: hidden;
-                    width: 200px;
-                    background-color: #f0f0f0;
-                    color: #333;
-                    text-align: center;
-                    border-radius: 6px;
-                    border: 1px solid #ccc;
-                    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-                    padding: 5px;
-                    position: absolute;
-                    z-index: 1;
-                    bottom: 150%; /* Position the tooltip above the text */
-                    left: 50%;
-                    margin-left: -100px;
-                    opacity: 0;
-                    transition: opacity 0.3s;
-                }
-                .tooltip:hover .tooltiptext {
-                    visibility: visible;
-                    opacity: 1;
-                }
-                .tooltip-icon {
-                    font-size: 12px;
-                    font-weight: bold;
-                    color: #6e7075; /* Darker gray color */
-                    background-color: transparent;
-                    border: 1.5px solid #6e7075;
-                    border-radius: 50%;
-                    width: 15px;
-                    height: 15px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin-left: 5px;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-                th, td {
-                    border: 1px solid black;
-                    padding: 8px;
-                    text-align: left;
-                }
-                th {
-                    background-color: #f2f2f2;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True
-            )
-            st.markdown(
-                variation_df.to_html(index=False, escape=False, justify='center', table_id="variation_metrics_table"),
-                unsafe_allow_html=True
-            )
-            st.markdown(
-                """
-                <style>
-                #variation_metrics_table {
-                    margin-left: auto;
-                    margin-right: auto;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True
-            )
+
+# # Step 4 processing
+# if 'fft_results' in st.session_state and run_step_4:
+#     fps = 1 / exposure_time
+#     fft_results = st.session_state['fft_results']
+#
+#     # Use the selected video source from Step 3
+#     video_path = st.session_state['selected_video_path']
+#
+#     if video_path is None:
+#         st.error("The selected video source is not available. Please complete the necessary steps for generating the video.")
+#     else:
+#         cbf_grid = compute_grid_cbf(fft_results, fps, grid_size, freq_filter_min, freq_filter_max)
+#
+#         # Calculate the variation metrics
+#         non_zero_cbfs = cbf_grid[cbf_grid > 0]
+#         std_dev_cbf = np.std(non_zero_cbfs)
+#         mean_cbf = np.mean(non_zero_cbfs)
+#         cv_cbf = std_dev_cbf / mean_cbf if mean_cbf != 0 else 0
+#
+#         # Create the grid map and save it
+#         grid_map_path = os.path.join(storage_path, 'grid_cbf_map.png')
+#         plt.figure(figsize=(10, 8))
+#         plt.imshow(cbf_grid, cmap='jet', interpolation='nearest', vmin=0, vmax=50)
+#         plt.colorbar(label='Dominant Frequency (Hz)')
+#         plt.savefig(grid_map_path, bbox_inches='tight', pad_inches=0)
+#         plt.close()
+#
+#         # Overlay grid lines and CBF values on video frames
+#         capture = cv2.VideoCapture(video_path)
+#         fourcc = cv2.VideoWriter_fourcc(*'M', 'J', 'P', 'G')
+#         grid_video_path = os.path.join(tempfile.gettempdir(), 'grid_video.avi')
+#         out = cv2.VideoWriter(
+#             grid_video_path,
+#             fourcc,
+#             fps,
+#             (int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)), int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+#         )
+#
+#         font_scale = max(0.3, min(1.0, 1.5 / grid_size))  # Adjusted font scale logic based on grid size
+#
+#         while capture.isOpened():
+#             ret, frame = capture.read()
+#             if not ret:
+#                 break
+#
+#             for i in range(grid_size):
+#                 for j in range(grid_size):
+#                     y1 = i * frame.shape[0] // grid_size
+#                     y2 = (i + 1) * frame.shape[0] // grid_size
+#                     x1 = j * frame.shape[1] // grid_size
+#                     x2 = (j + 1) * frame.shape[1] // grid_size
+#
+#                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 1)
+#                     cv2.putText(frame, f'{cbf_grid[i, j]:.2f}', (x1 + 5, y1 + 20), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 0), 1)
+#
+#             out.write(frame)
+#
+#         capture.release()
+#         out.release()
+#
+#         # Convert video to MP4 format for compatibility and save
+#         converted_grid_video_path = convert_video_to_mp4(grid_video_path)
+#         shutil.copy(converted_grid_video_path, os.path.join(storage_path, 'grid_video.mp4'))
+#
+#
+#
+#
+#         col1, col2, col3, col4, col5 = st.columns(
+#             [2.5, 0.2, 3.0, 0.01, 2]
+#         )  # Added two columns 2 AND 4 to create spacing
+#
+#         with col1:
+#             st.markdown(
+#                 f"<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 0px;'>Grid Video</h5>",
+#                 unsafe_allow_html=True
+#             )
+#             st.video(converted_grid_video_path, format='video/mp4')
+#             # with open(converted_grid_video_path, "rb") as file:
+#             #     st.download_button("Download Grid Video", file.read(), file_name='grid_video.mp4',
+#             #                        key="download_grid_video")
+#
+#         with col3:
+#             st.markdown(
+#                 f"<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 0px;'>CBF Heatmap</h5>",
+#                 unsafe_allow_html=True
+#             )
+#             st.image(grid_map_path, use_column_width=True)
+#             # with open(grid_map_path, "rb") as file:
+#             #     st.download_button("Download Grid CBF Map", file.read(), file_name='grid_cbf_map.png',
+#             #                        key="download_grid_cbf_map")
+#
+#         with col5:
+#             st.markdown(
+#                 f"<h5 style='text-align: center; font-size: 18px; font-weight: bold; margin-left: 0px;'>Variation Metrics</h5>",
+#                 unsafe_allow_html=True
+#             )
+#             variation_data = {
+#                 'Metric': [
+#                     'Mean CBF <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">The average Ciliary Beat Frequency across all grid cells.</span></span>',
+#                     'Standard Deviation of CBF <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">The standard deviation of Ciliary Beat Frequency across grid cells, measured in Hertz (Hz), representing variability from the mean.</span></span>',
+#                     'Coefficient of Variation <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">The ratio of the standard deviation to the mean, indicating relative variability (0 means no variability, close to 0 means low variability, >1 means high variability).</span></span>'
+#                 ],
+#                 'Value': [f"{mean_cbf:.2f}", f"{std_dev_cbf:.2f}", f"{cv_cbf:.2f}"]
+#             }
+#             variation_df = pd.DataFrame(variation_data)
+#
+#             # Adding custom CSS for tooltips similar to sidebar
+#             st.markdown(
+#                 """
+#                 <style>
+#                 .tooltip {
+#                     position: relative;
+#                     display: inline-block;
+#                     cursor: pointer;
+#                     font-size: 14px;
+#                     color: #6c757d;
+#                     margin-left: 5px;
+#                 }
+#                 .tooltip .tooltiptext {
+#                     visibility: hidden;
+#                     width: 200px;
+#                     background-color: #f0f0f0;
+#                     color: #333;
+#                     text-align: center;
+#                     border-radius: 6px;
+#                     border: 1px solid #ccc;
+#                     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+#                     padding: 5px;
+#                     position: absolute;
+#                     z-index: 1;
+#                     bottom: 150%; /* Position the tooltip above the text */
+#                     left: 50%;
+#                     margin-left: -100px;
+#                     opacity: 0;
+#                     transition: opacity 0.3s;
+#                 }
+#                 .tooltip:hover .tooltiptext {
+#                     visibility: visible;
+#                     opacity: 1;
+#                 }
+#                 .tooltip-icon {
+#                     font-size: 12px;
+#                     font-weight: bold;
+#                     color: #6e7075; /* Darker gray color */
+#                     background-color: transparent;
+#                     border: 1.5px solid #6e7075;
+#                     border-radius: 50%;
+#                     width: 15px;
+#                     height: 15px;
+#                     display: flex;
+#                     align-items: center;
+#                     justify-content: center;
+#                     margin-left: 5px;
+#                 }
+#                 table {
+#                     width: 100%;
+#                     border-collapse: collapse;
+#                 }
+#                 th, td {
+#                     border: 1px solid black;
+#                     padding: 8px;
+#                     text-align: left;
+#                 }
+#                 th {
+#                     background-color: #f2f2f2;
+#                 }
+#                 </style>
+#                 """,
+#                 unsafe_allow_html=True
+#             )
+#             st.markdown(
+#                 variation_df.to_html(index=False, escape=False, justify='center', table_id="variation_metrics_table"),
+#                 unsafe_allow_html=True
+#             )
+#             st.markdown(
+#                 """
+#                 <style>
+#                 #variation_metrics_table {
+#                     margin-left: auto;
+#                     margin-right: auto;
+#                 }
+#                 </style>
+#                 """,
+#                 unsafe_allow_html=True
+#             )
