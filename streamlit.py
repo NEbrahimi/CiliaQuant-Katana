@@ -407,15 +407,35 @@ tooltips = {
     'Coefficient of Variation': 'The ratio of the standard deviation to the mean, indicating relative variability.'
 }
 
+# Define the permanent storage path based on the uploaded file
+if uploaded_file:
+    file_name = os.path.splitext(uploaded_file.name)[0]
+    storage_path = os.path.join("/srv/scratch/micf_waters/CiliaQuant/storage", file_name)
+    os.makedirs(storage_path, exist_ok=True)
 
 # Step 1 processing
-if uploaded_file and exposure_time > 0 and run_step_1:
-    # Clear session state for subsequent steps
-    keys_to_clear = ['mask_path', 'fft_results', 'selected_video_path', 'original_video_permanent_path', 'masked_video_permanent_path', 'compatible_masked_video_path']
-    for key in keys_to_clear:
-        if key in st.session_state:
-            del st.session_state[key]
+# if uploaded_file and exposure_time > 0 and run_step_1:
+#     keys_to_clear = ['mask_path', 'fft_results', 'selected_video_path', 'original_video_permanent_path', 'masked_video_permanent_path', 'compatible_masked_video_path']
+#     for key in keys_to_clear:
+#         if key in st.session_state:
+#             del st.session_state[key]
+#
+#     fps = 1 / exposure_time
+#     if 'temp_dir' not in st.session_state:
+#         st.session_state['temp_dir'] = tempfile.mkdtemp()
+#
+#     video_path = convert_nd2_to_video(uploaded_file, st.session_state['temp_dir'], fps)
+#     compatible_video_path = convert_video_for_streamlit(video_path)
+#     st.session_state['original_video_path'] = video_path
+#     st.session_state['compatible_video_path'] = compatible_video_path
+#     with open(compatible_video_path, "rb") as file:
+#         file_data = file.read()
+#     st.download_button("Download Original Video", file_data, compatible_video_path.split(os.path.sep)[-1])
+#     col1, col2 = st.columns(2)
+#     with col1:
+#         st.video(compatible_video_path, format='video/mp4', start_time=0, loop=True)
 
+if uploaded_file and exposure_time > 0 and run_step_1:
     fps = 1 / exposure_time
     if 'temp_dir' not in st.session_state:
         st.session_state['temp_dir'] = tempfile.mkdtemp()
@@ -424,17 +444,13 @@ if uploaded_file and exposure_time > 0 and run_step_1:
     compatible_video_path = convert_video_for_streamlit(video_path)
     st.session_state['original_video_path'] = video_path
     st.session_state['compatible_video_path'] = compatible_video_path
-    with open(compatible_video_path, "rb") as file:
-        file_data = file.read()
-    st.download_button("Download Original Video", file_data, compatible_video_path.split(os.path.sep)[-1])
     col1, col2 = st.columns(2)
     with col1:
         st.video(compatible_video_path, format='video/mp4', start_time=0, loop=True)
 
-
-# Define the permanent storage path
-storage_path = "/srv/scratch/micf_waters/CiliaQuant/storage"
-os.makedirs(storage_path, exist_ok=True)
+# # Define the permanent storage path
+# storage_path = "/srv/scratch/micf_waters/CiliaQuant/storage"
+# os.makedirs(storage_path, exist_ok=True)
 
 # Step 2 processing
 if 'original_video_path' in st.session_state and run_step_2:
@@ -469,15 +485,15 @@ if 'original_video_path' in st.session_state and run_step_2:
     with col1:
         st.markdown("<h5 style='text-align: center;'>Original Video</h5>", unsafe_allow_html=True)
         st.video(st.session_state['compatible_video_path'], format='video/mp4', start_time=0, loop=True)
-        with open(st.session_state['original_video_path'], "rb") as file:
-            st.download_button("Download Original Video", file.read(), file_name='Original_Video.mp4',
-                               key="download_orig_video")
+        # with open(st.session_state['original_video_path'], "rb") as file:
+            # st.download_button("Download Original Video", file.read(), file_name='Original_Video.mp4',
+            #                    key="download_orig_video")
     with col2:
         st.markdown("<h5 style='text-align: center;'>Masked Video</h5>", unsafe_allow_html=True)
         st.video(st.session_state['compatible_masked_video_path'], format='video/mp4', start_time=0, loop=True)
-        with open(masked_video_path, "rb") as file:
-            st.download_button("Download Masked Video", file.read(), file_name='Masked_Video.mp4',
-                               key="download_masked_video")
+        # with open(masked_video_path, "rb") as file:
+            # st.download_button("Download Masked Video", file.read(), file_name='Masked_Video.mp4',
+            #                    key="download_masked_video")
     with col3:
         st.markdown("<h5 style='text-align: center;'>Magnitude Map</h5>", unsafe_allow_html=True)
         magnitude_image = plt.imread(magnitude_path)
@@ -505,9 +521,9 @@ if 'original_video_path' in st.session_state and run_step_2:
         resized_image = plt.imread(resized_magnitude_path)
 
         st.image(resized_magnitude_path, use_column_width=True)
-        with open(resized_magnitude_path, "rb") as file:
-            st.download_button("Download Magnitude Map", file.read(), file_name='Magnitude_Map.png',
-                               key="download_magnitude_map")
+        # with open(resized_magnitude_path, "rb") as file:
+        #     st.download_button("Download Magnitude Map", file.read(), file_name='Magnitude_Map.png',
+        #                        key="download_magnitude_map")
 
 # Step 3 processing with updated visualizations and structured table layout
 if 'original_video_permanent_path' in st.session_state and run_step_3:
@@ -692,9 +708,9 @@ if 'fft_results' in st.session_state and run_step_4:
                 unsafe_allow_html=True
             )
             st.video(converted_grid_video_path, format='video/mp4')
-            with open(converted_grid_video_path, "rb") as file:
-                st.download_button("Download Grid Video", file.read(), file_name='grid_video.mp4',
-                                   key="download_grid_video")
+            # with open(converted_grid_video_path, "rb") as file:
+            #     st.download_button("Download Grid Video", file.read(), file_name='grid_video.mp4',
+            #                        key="download_grid_video")
 
         with col3:
             st.markdown(
@@ -702,9 +718,9 @@ if 'fft_results' in st.session_state and run_step_4:
                 unsafe_allow_html=True
             )
             st.image(grid_map_path, use_column_width=True)
-            with open(grid_map_path, "rb") as file:
-                st.download_button("Download Grid CBF Map", file.read(), file_name='grid_cbf_map.png',
-                                   key="download_grid_cbf_map")
+            # with open(grid_map_path, "rb") as file:
+            #     st.download_button("Download Grid CBF Map", file.read(), file_name='grid_cbf_map.png',
+            #                        key="download_grid_cbf_map")
 
         with col5:
             st.markdown(
